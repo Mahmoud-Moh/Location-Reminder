@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "180479136098",
+    "project_id": "locrem4",
+    "storage_bucket": "locrem4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:180479136098:android:b72e9799a6907f43db1c3b",
+        "android_client_info": {
+          "package_name": "com.udacity.project4"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "180479136098-d5mmcltjgu4i4bi79emn5qt3tk91cjvd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.udacity.project4",
+            "certificate_hash": "96714edb48cb98d10b7cacf9a0af276dcade8267"
+          }
+        },
+        {
+          "client_id": "180479136098-86trk07tftt93bdmb0q33lfq8seqbllp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqB3-6uJSp3xOWQN-Q462aW4yPTTY8H_Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "180479136098-86trk07tftt93bdmb0q33lfq8seqbllp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
