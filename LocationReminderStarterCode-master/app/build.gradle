@@ -57,9 +57,7 @@ android {
         }
     }
 
-    packagingOptions {
-        pickFirst "META-INF/*"
-    }
+
 }
 
 dependencies {
