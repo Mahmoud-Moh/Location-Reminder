@@ -56,4 +56,26 @@ fun sendNotification(context: Context, reminderDataItem: ReminderDataItem) {
     notificationManager.notify(getUniqueId(), notification)
 }
 
+
+fun createChannel(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val notificationChannel = NotificationChannel(
+            CHANNEL_ID,
+            context.getString(R.string.channel_name),
+
+            NotificationManager.IMPORTANCE_HIGH
+        )
+            .apply {
+                setShowBadge(false)
+            }
+
+        notificationChannel.enableLights(true)
+        notificationChannel.enableVibration(true)
+        notificationChannel.description = context.getString(R.string.notification_channel_description)
+
+        val notificationManager = context.getSystemService(NotificationManager::class.java)
+        notificationManager.createNotificationChannel(notificationChannel)
+    }
+}
+private const val CHANNEL_ID = "GeofenceChannel"
 private fun getUniqueId() = ((System.currentTimeMillis() % 10000).toInt())

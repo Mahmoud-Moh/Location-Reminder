@@ -11,22 +11,30 @@ class FakeDataSource(
     fun setShouldReturnError(shouldReturn: Boolean) {
         this.shouldReturnError = shouldReturn
     }
-    override suspend fun getReminders(): Result<List<ReminderDTO>> {
-        reminders?.let { return Result.Success(ArrayList(it)) }
-    }
+
+    override suspend fun getReminders(): Result<List<ReminderDTO>> =
+        if (shouldReturnError) {
+            Result.Error("Error occurred")
+        } else {
+            Result.Success(reminders)
+        }
 
     override suspend fun saveReminder(reminder: ReminderDTO) {
-        reminders.add(reminder)
+        reminders += reminder
     }
 
-    override suspend fun getReminder(id: String): Result<ReminderDTO> {
-        val reminder = reminders.find{it.id == id}
-        if(reminder == null)
-            return Result.Error("not found")
-        else
-            return Result.Success(reminder)
+    override suspend fun getReminder(id: String): Result<ReminderDTO> =
+        if (shouldReturnError) {
+            Result.Error("Error occurred")
+        } else {
+            val reminder = reminders.find { it.id == id }
 
-    }
+            if (reminder == null) {
+                Result.Error("Not found")
+            } else {
+                Result.Success(reminder)
+            }
+        }
 
     override suspend fun deleteAllReminders() {
         reminders.clear()

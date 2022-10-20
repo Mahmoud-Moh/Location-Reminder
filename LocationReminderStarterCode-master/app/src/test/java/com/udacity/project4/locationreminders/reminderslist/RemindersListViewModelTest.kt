@@ -71,4 +71,15 @@ class RemindersListViewModelTest {
         assertThat(viewModel.showLoading.getOrAwaitValue()).isFalse()
     }
 
+
+    @Test
+    fun check_loading() = runBlockingTest {
+        mainCoroutineRule.pauseDispatcher()
+        viewModel.loadReminders()
+        assertThat(viewModel.showLoading.getOrAwaitValue()).isTrue()
+        mainCoroutineRule.resumeDispatcher()
+        assertThat(viewModel.showLoading.getOrAwaitValue()).isFalse()
+
+    }
+
 }

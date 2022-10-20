@@ -7,14 +7,18 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentSender.SendIntentException
 import android.content.pm.PackageManager
+import android.content.res.Resources
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Looper
+import android.util.Log
 import android.view.*
 import android.widget.Toast
 import androidx.annotation.NonNull
+import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.res.ResourcesCompat
 import androidx.databinding.DataBindingUtil
@@ -31,6 +35,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.gms.tasks.Task
+import com.google.android.material.snackbar.Snackbar
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
@@ -51,6 +56,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     var latitude_local by Delegates.notNull<Double>()
     var longtitude_local by Delegates.notNull<Double>()
     var loc_name_local = "myLocation"
+    private val TAG_STYLE = "digi5ra"
+
 
 
     override fun onCreateView(
@@ -67,7 +74,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         locationRequest!!.setInterval(5000)
         locationRequest!!.setFastestInterval(2000)
 
-        binding.saveReminder.setOnClickListener{
+        binding.saveReminder.setOnClickListener {
             onLocationSelected()
         }
 
@@ -77,6 +84,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             .findFragmentByTag(getString(R.string.map_fragment)) as? SupportMapFragment
 
         mapFragment!!.getMapAsync(this)
+        //   Toast.makeText(requireContext(), "Please allow permissions to use map.4", Toast.LENGTH_LONG).show()
         getCurrentLocation()
 
         return binding.root
@@ -95,17 +103,20 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     }
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
-        // TODO: Change the map type based on the user's selection.
         R.id.normal_map -> {
+            map.mapType = GoogleMap.MAP_TYPE_NORMAL
             true
         }
         R.id.hybrid_map -> {
+            map.mapType = GoogleMap.MAP_TYPE_HYBRID
             true
         }
         R.id.satellite_map -> {
+            map.mapType = GoogleMap.MAP_TYPE_SATELLITE
             true
         }
         R.id.terrain_map -> {
+            map.mapType = GoogleMap.MAP_TYPE_TERRAIN
             true
         }
         else -> super.onOptionsItemSelected(item)
@@ -131,36 +142,63 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         map.addCircle(circleOptions)
         setMaplongClick(this.map)
         setPOIClick(this.map)
+        setMapStyle(map)
     }
 
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
-         grantResults: IntArray
+        grantResults: IntArray
     ) {
+        //  Toast.makeText(requireContext(), "77777777777777777777", Toast.LENGTH_LONG).show()
         super.onRequestPermissionsResult(requestCode, permissions!!, grantResults)
         if (requestCode == 1) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 if (isGPSEnabled()) {
+                    //   Toast.makeText(requireContext(), "############", Toast.LENGTH_LONG).show
                     getCurrentLocation()
+                    enableMyLocation()
                 } else {
+                    //   Toast.makeText(requireContext(), "@@@@@@@@@@@", Toast.LENGTH_LONG).show()
                     turnOnGPS()
                 }
             }
+        } else {
         }
     }
 
-     override fun onActivityResult(
+    fun enableMyLocation() {
+        if (isPermissionGranted()) {
+            map.isMyLocationEnabled = true
+        } else {
+            val TAG = "someTag"
+            Log.i(TAG, "NOT ENABLED NOT GRANTED OOF")
+        }
+    }
+
+    private fun isPermissionGranted(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) === PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun onActivityResult(
         requestCode: Int,
         resultCode: Int,
-         data: Intent?
+        data: Intent?
     ) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 2) {
             if (resultCode == Activity.RESULT_OK) {
+
                 getCurrentLocation()
+            } else {
+
             }
+        } else {
+
         }
     }
 
@@ -172,6 +210,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
                 if (isGPSEnabled()) {
+
                     LocationServices.getFusedLocationProviderClient(requireContext())
                         .requestLocationUpdates(locationRequest, object : LocationCallback() {
                             override fun onLocationResult(@NonNull locationResult: LocationResult) {
@@ -182,16 +221,19 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                                     val index = locationResult.locations.size - 1
                                     val latitude = locationResult.locations[index].latitude
                                     val longitude = locationResult.locations[index].longitude
-/*
-                                    _viewModel.longitude.value = longitude
-                                    _viewModel.latitude.value = latitude
-                                    _viewModel.reminderSelectedLocationStr.value = "myLocation"
-*/
                                     latitude_local = latitude
                                     longtitude_local = longitude
                                     val homeLatLng = LatLng(latitude, longitude)
-                                    map.addMarker(MarkerOptions().position(homeLatLng).title("Marker in your location"))
-                                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(homeLatLng, 15f))
+                                    map.addMarker(
+                                        MarkerOptions().position(homeLatLng)
+                                            .title("Marker in your location")
+                                    )
+                                    map.moveCamera(
+                                        CameraUpdateFactory.newLatLngZoom(
+                                            homeLatLng,
+                                            15f
+                                        )
+                                    )
                                 }
                             }
                         }, Looper.getMainLooper())
@@ -199,12 +241,18 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                     turnOnGPS()
                 }
             } else {
+                Toast.makeText(
+                    requireContext(),
+                    "Allowing Device Location is important for the app to work.",
+                    Toast.LENGTH_LONG
+                ).show()
                 requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
             }
         }
     }
 
     private fun turnOnGPS() {
+        //   Toast.makeText(requireContext(), "turnOnGPS", Toast.LENGTH_LONG).show()
         val builder = LocationSettingsRequest.Builder()
             .addLocationRequest(locationRequest!!)
         builder.setAlwaysShow(true)
@@ -216,12 +264,24 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 val response: LocationSettingsResponse? = task.getResult(ApiException::class.java)
                 Toast.makeText(requireContext(), "GPS is already tured on", Toast.LENGTH_SHORT)
                     .show()
+                Log.i("checkelse", "GPS is already tured on")
+
             } catch (e: ApiException) {
                 when (e.statusCode) {
                     LocationSettingsStatusCodes.RESOLUTION_REQUIRED -> try {
+                        //Toast.makeText(requireContext(), "OOOOOOOOOOOOOOOOOOO", Toast.LENGTH_SHORT)
+                        //   .show()
                         val resolvableApiException = e as ResolvableApiException
                         resolvableApiException.startResolutionForResult(requireActivity(), 2)
                     } catch (ex: SendIntentException) {
+                        Toast.makeText(
+                            requireContext(),
+                            "KEKEKEKEKEKEKEKEKEKEKEKEKEKKK",
+                            Toast.LENGTH_SHORT
+                        )
+                            .show()
+                        Log.i("checkelse", "KEKEKEKEKEKEKEKEKEKEKEKEKEKKK")
+
                         ex.printStackTrace()
                     }
                     LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> {}
@@ -234,21 +294,21 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         var locationManager: LocationManager? = null
         var isEnabled = false
         if (locationManager == null) {
-            locationManager = requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager?
+            locationManager =
+                requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager?
         }
         isEnabled = locationManager!!.isProviderEnabled(LocationManager.GPS_PROVIDER)
         return isEnabled
     }
 
-    fun setMaplongClick(map: GoogleMap){
-        map.setOnMapLongClickListener {
-                latLng ->
+    fun setMaplongClick(map: GoogleMap) {
+        map.setOnMapLongClickListener { latLng ->
             val circleOptions = CircleOptions()
                 .center(latLng)
                 .fillColor(ResourcesCompat.getColor(resources, R.color.colorAccent, null))
                 .strokeColor(ResourcesCompat.getColor(resources, R.color.colorPrimary, null))
                 .strokeWidth(4f)
-                .radius(20.0)
+                .radius(100.0)
 /*
             _viewModel.longitude.value = latLng.longitude
             _viewModel.latitude.value = latLng.latitude
@@ -256,29 +316,50 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             latitude_local = latLng.latitude
             longtitude_local = latLng.longitude
             map.addCircle(circleOptions)
-         //   map.addMarker(MarkerOptions().position(latLng).title("Marker in your location"))
+            map.addMarker(MarkerOptions().position(latLng).title("Marker in your location"))
         }
     }
-    fun setPOIClick(map: GoogleMap){
-        map.setOnPoiClickListener {
-                Poi ->
-            val circleOptions = CircleOptions()
-                .center(Poi.latLng)
-                .fillColor(ResourcesCompat.getColor(resources, R.color.colorAccent, null))
-                .strokeColor(ResourcesCompat.getColor(resources, R.color.colorPrimary, null))
-                .strokeWidth(4f)
-                .radius(20.0)
-           /* _viewModel.longitude.value = Poi.latLng.longitude
-            _viewModel.latitude.value = Poi.latLng.latitude*/
+
+    fun setPOIClick(map: GoogleMap) {
+        map.setOnPoiClickListener { Poi ->
+        /*val circleOptions = CircleOptions()
+            .center(Poi.latLng)
+            .fillColor(ResourcesCompat.getColor(resources, R.color.colorAccent, null))
+            .strokeColor(ResourcesCompat.getColor(resources, R.color.colorPrimary, null))
+            .strokeWidth(4f)
+            .radius(20.0)*/
+            /* _viewModel.longitude.value = Poi.latLng.longitude
+             _viewModel.latitude.value = Poi.latLng.latitude*/
             latitude_local = Poi.latLng.latitude
             longtitude_local = Poi.latLng.longitude
             loc_name_local = Poi.name
-            map.addCircle(circleOptions)
+            //map.addCircle(circleOptions)
             _viewModel.reminderSelectedLocationStr.value = Poi.name.toString()
+            val poiMarker = map.addMarker(MarkerOptions().position(Poi.latLng).title(Poi.name))
+            poiMarker.showInfoWindow()
 
-         //   map.addMarker(MarkerOptions().position(latLng).title("Marker in your location"))
         }
     }
+
+    private fun setMapStyle(map: GoogleMap) {
+            // Customize the styling of the base map using a JSON object defined
+            // in a raw resource file.
+        try {
+            val success = map.setMapStyle(
+                MapStyleOptions.loadRawResourceStyle(
+                    requireContext(),
+                    R.raw.maps_style
+                )
+            )
+
+            if (!success) {
+                Log.e(TAG_STYLE, "Style parsing failed.")
+            }
+        } catch (e: Resources.NotFoundException) {
+            Log.e(TAG_STYLE, "Can't find style. Error: ", e)
+        }
+    }
+
 
 
 }
