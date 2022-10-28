@@ -97,8 +97,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     private fun onLocationSelected() {
         Toast.makeText(requireContext(), "${latitude_local}  ${longtitude_local}", Toast.LENGTH_LONG).show()
-        latitude_local = map.myLocation.latitude
-        longtitude_local = map.myLocation.longitude
 
         if (
             latitude_local == 0.0 ||
