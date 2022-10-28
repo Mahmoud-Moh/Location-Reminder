@@ -124,6 +124,9 @@ class SaveReminderFragmentTest {
         //    ActionOnlyNavDirections(actionId=2131230785)
         //);
         onView(withText(R.string.reminder_saved)).inRoot(ToastMatcher()).check(matches(isDisplayed()))
+        onView(withId(com.google.android.material.R.id.snackbar_text))
+            .check(matches(withText(R.string.geofences_added)))
+
 
         // verify(navController).navigate(SaveReminderFragmentDirections.actionSaveReminderFragmentToReminderListFragment())
     }
@@ -146,6 +149,8 @@ class SaveReminderFragmentTest {
         closeSoftKeyboard()
         onView(withId(R.id.saveReminder)).perform(click())
         assertThat(viewModel.showSnackBarInt.getOrAwaitValue()).isEqualTo(R.string.err_enter_title)
+        onView(withId(com.google.android.material.R.id.snackbar_text))
+            .check(matches(withText(R.string.err_enter_title)))
     }
 
 

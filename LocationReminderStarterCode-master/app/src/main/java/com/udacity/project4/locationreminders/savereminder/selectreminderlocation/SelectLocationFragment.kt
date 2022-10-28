@@ -2,6 +2,7 @@ package com.udacity.project4.locationreminders.savereminder.selectreminderlocati
 
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -20,6 +21,8 @@ import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.content.PermissionChecker
+import androidx.core.content.PermissionChecker.checkSelfPermission
 import androidx.core.content.res.ResourcesCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.FragmentManager
@@ -56,8 +59,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     var latitude_local by Delegates.notNull<Double>()
     var longtitude_local by Delegates.notNull<Double>()
     var loc_name_local = "myLocation"
-    private val TAG_STYLE = "digi5ra"
-
+    private val TAG_STYLE = "someTag"
 
 
     override fun onCreateView(
@@ -74,6 +76,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         locationRequest!!.setInterval(5000)
         locationRequest!!.setFastestInterval(2000)
 
+        latitude_local = 0.0
+        longtitude_local = 0.0
+
         binding.saveReminder.setOnClickListener {
             onLocationSelected()
         }
@@ -85,12 +90,23 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
         mapFragment!!.getMapAsync(this)
         //   Toast.makeText(requireContext(), "Please allow permissions to use map.4", Toast.LENGTH_LONG).show()
-        getCurrentLocation()
+        //getCurrentLocation()
 
         return binding.root
     }
 
     private fun onLocationSelected() {
+        Toast.makeText(requireContext(), "${latitude_local}  ${longtitude_local}", Toast.LENGTH_LONG).show()
+        latitude_local = map.myLocation.latitude
+        longtitude_local = map.myLocation.longitude
+
+        if (
+            latitude_local == 0.0 ||
+            longtitude_local == 0.0
+        ) {
+         //   Toast.makeText(requireContext(), "Please select location.", Toast.LENGTH_LONG).show()
+            return
+        }
         _viewModel.reminderSelectedLocationStr.value = loc_name_local
         _viewModel.latitude.value = latitude_local
         _viewModel.longitude.value = longtitude_local
@@ -122,9 +138,11 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         else -> super.onOptionsItemSelected(item)
     }
 
+    @SuppressLint("MissingPermission")
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
-
+        //map.isMyLocationEnabled = true
+        // enableMyLocation()
 
         val markerOptions = MarkerOptions()
             .position(map.cameraPosition.target)
@@ -143,6 +161,16 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         setMaplongClick(this.map)
         setPOIClick(this.map)
         setMapStyle(map)
+        enableMyLocation()
+        map.setOnMyLocationButtonClickListener {
+            if (!isGPSEnabled()) {
+                turnOnGPS()
+            }else{
+                getCurrentLocation()
+            }
+            true
+        }
+
     }
 
 
@@ -151,56 +179,63 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         permissions: Array<String>,
         grantResults: IntArray
     ) {
-        //  Toast.makeText(requireContext(), "77777777777777777777", Toast.LENGTH_LONG).show()
         super.onRequestPermissionsResult(requestCode, permissions!!, grantResults)
         if (requestCode == 1) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                if (isGPSEnabled()) {
-                    //   Toast.makeText(requireContext(), "############", Toast.LENGTH_LONG).show
-                    getCurrentLocation()
-                    enableMyLocation()
-                } else {
-                    //   Toast.makeText(requireContext(), "@@@@@@@@@@@", Toast.LENGTH_LONG).show()
-                    turnOnGPS()
-                }
+                enableMyLocation()
+            }else{
+                Snackbar.make(requireView(), "Error: Please allow permissions for the app to work.", Snackbar.LENGTH_LONG).show()
             }
         } else {
+            Snackbar.make(requireView(), "Error: Press again.", Snackbar.LENGTH_LONG).show()
         }
     }
 
-    fun enableMyLocation() {
-        if (isPermissionGranted()) {
-            map.isMyLocationEnabled = true
+
+    private fun enableMyLocation() {
+
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ), 1
+            )
+            return
         } else {
-            val TAG = "someTag"
-            Log.i(TAG, "NOT ENABLED NOT GRANTED OOF")
+            map.setMyLocationEnabled(true)
         }
     }
+
 
     private fun isPermissionGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(
+        return checkSelfPermission(
             requireContext(),
             Manifest.permission.ACCESS_FINE_LOCATION
-        ) === PackageManager.PERMISSION_GRANTED
+        ) === PermissionChecker.PERMISSION_GRANTED
     }
 
-    override fun onActivityResult(
-        requestCode: Int,
-        resultCode: Int,
-        data: Intent?
-    ) {
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 2) {
-            if (resultCode == Activity.RESULT_OK) {
-
+        if(requestCode == 2){
+            if(resultCode == Activity.RESULT_OK){
                 getCurrentLocation()
-            } else {
-
+            }else if(resultCode == Activity.RESULT_CANCELED){
+                Snackbar.make(requireView(), "Error: Please allow permissions for the app to work.", Snackbar.LENGTH_LONG).show()
             }
-        } else {
-
+        }else{
+            Snackbar.make(requireView(), "Error: Please allow permissions for the app to work.", Snackbar.LENGTH_LONG).show()
         }
     }
+
 
     private fun getCurrentLocation() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -262,26 +297,16 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         result.addOnCompleteListener(OnCompleteListener<LocationSettingsResponse?> { task ->
             try {
                 val response: LocationSettingsResponse? = task.getResult(ApiException::class.java)
-                Toast.makeText(requireContext(), "GPS is already tured on", Toast.LENGTH_SHORT)
+
+                Toast.makeText(requireContext(), "GPS is already turned on", Toast.LENGTH_SHORT)
                     .show()
-                Log.i("checkelse", "GPS is already tured on")
 
             } catch (e: ApiException) {
                 when (e.statusCode) {
                     LocationSettingsStatusCodes.RESOLUTION_REQUIRED -> try {
-                        //Toast.makeText(requireContext(), "OOOOOOOOOOOOOOOOOOO", Toast.LENGTH_SHORT)
-                        //   .show()
                         val resolvableApiException = e as ResolvableApiException
                         resolvableApiException.startResolutionForResult(requireActivity(), 2)
                     } catch (ex: SendIntentException) {
-                        Toast.makeText(
-                            requireContext(),
-                            "KEKEKEKEKEKEKEKEKEKEKEKEKEKKK",
-                            Toast.LENGTH_SHORT
-                        )
-                            .show()
-                        Log.i("checkelse", "KEKEKEKEKEKEKEKEKEKEKEKEKEKKK")
-
                         ex.printStackTrace()
                     }
                     LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> {}
@@ -322,14 +347,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     fun setPOIClick(map: GoogleMap) {
         map.setOnPoiClickListener { Poi ->
-        /*val circleOptions = CircleOptions()
-            .center(Poi.latLng)
-            .fillColor(ResourcesCompat.getColor(resources, R.color.colorAccent, null))
-            .strokeColor(ResourcesCompat.getColor(resources, R.color.colorPrimary, null))
-            .strokeWidth(4f)
-            .radius(20.0)*/
-            /* _viewModel.longitude.value = Poi.latLng.longitude
-             _viewModel.latitude.value = Poi.latLng.latitude*/
+
             latitude_local = Poi.latLng.latitude
             longtitude_local = Poi.latLng.longitude
             loc_name_local = Poi.name
@@ -342,8 +360,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     }
 
     private fun setMapStyle(map: GoogleMap) {
-            // Customize the styling of the base map using a JSON object defined
-            // in a raw resource file.
+        // Customize the styling of the base map using a JSON object defined
+        // in a raw resource file.
         try {
             val success = map.setMapStyle(
                 MapStyleOptions.loadRawResourceStyle(
@@ -359,7 +377,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             Log.e(TAG_STYLE, "Can't find style. Error: ", e)
         }
     }
-
 
 
 }

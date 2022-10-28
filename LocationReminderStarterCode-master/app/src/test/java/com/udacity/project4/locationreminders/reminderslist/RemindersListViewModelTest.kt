@@ -8,6 +8,7 @@ import com.google.common.truth.Truth.assertThat
 import com.udacity.project4.getOrAwaitValue
 import com.udacity.project4.locationreminders.data.FakeDataSource
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
+import com.udacity.project4.locationreminders.data.dto.Result
 import com.udacity.project4.util.MainCoroutineRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
@@ -35,15 +36,16 @@ class RemindersListViewModelTest {
         stopKoin()
 
         fakeDataSource = FakeDataSource()
-        viewModel = RemindersListViewModel(
-            ApplicationProvider.getApplicationContext(),
-            fakeDataSource
-        )
+
     }
 
 
     @Test
     fun withReminders_resultNotEmpty() = runBlockingTest {
+        viewModel = RemindersListViewModel(
+            ApplicationProvider.getApplicationContext(),
+            fakeDataSource
+        )
         fakeDataSource.saveReminder(
             ReminderDTO(
                 "Test",
@@ -65,6 +67,10 @@ class RemindersListViewModelTest {
 
     @Test
     fun ifNoReminders_showsNoData() = runBlockingTest {
+        viewModel = RemindersListViewModel(
+            ApplicationProvider.getApplicationContext(),
+            fakeDataSource
+        )
         viewModel.loadReminders()
         assertThat(viewModel.remindersList.getOrAwaitValue().isEmpty()).isTrue()
         assertThat(viewModel.showNoData.getOrAwaitValue()).isTrue()
@@ -74,12 +80,27 @@ class RemindersListViewModelTest {
 
     @Test
     fun check_loading() = runBlockingTest {
+        viewModel = RemindersListViewModel(
+            ApplicationProvider.getApplicationContext(),
+            fakeDataSource
+        )
         mainCoroutineRule.pauseDispatcher()
         viewModel.loadReminders()
         assertThat(viewModel.showLoading.getOrAwaitValue()).isTrue()
         mainCoroutineRule.resumeDispatcher()
         assertThat(viewModel.showLoading.getOrAwaitValue()).isFalse()
 
+    }
+
+    @Test
+    fun shouldReturnErrorTest() = runBlockingTest {
+        fakeDataSource.setShouldReturnError(true)
+        viewModel = RemindersListViewModel(
+            ApplicationProvider.getApplicationContext(),
+            fakeDataSource
+        )
+        viewModel.loadReminders()
+        assertThat(viewModel.showSnackBar.value!!.equals(Result.Error("Error occurred").message))
     }
 
 }

@@ -182,7 +182,6 @@ class SaveReminderFragment : BaseFragment() {
         permissions: Array<String>,
         grantResults: IntArray
     ) {
-        Log.e(TAG, "onRequestPermissionResult")
 
         if (
             grantResults.isEmpty() ||
@@ -204,8 +203,8 @@ class SaveReminderFragment : BaseFragment() {
                     })
                 }.show()
 
-            Toast.makeText(requireContext(), "Please allow permissions", Toast.LENGTH_LONG)
         } else {
+         //   Toast.makeText(requireContext(), "Please allow permissions", Toast.LENGTH_LONG).show()
             checkDeviceLocationSettingsAndStartGeofence()
         }
     }
@@ -279,7 +278,7 @@ class SaveReminderFragment : BaseFragment() {
             .build()
 
         val intent = Intent(requireContext(), GeofenceBroadcastReceiver::class.java)
-        intent.action = "GeofenceConstants.ACTION_GEOFENCE_EVENT"
+        intent.action = "ACTION_GEOFENCE_EVENT"
 
         val pendingIntent = PendingIntent.getBroadcast(
             requireContext(),
@@ -289,62 +288,31 @@ class SaveReminderFragment : BaseFragment() {
         )
 
 
-        /*if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            requestForegroundAndBackgroundLocationPermissions()
-        }*/
-        // geofencingClient?.addGeofences(geofencingRequest, geofencePendingIntent)?.run {
-        //   addOnSuccessListener {
-        //      Toast.makeText(requireContext(), "TRUUUUUUUEE + ${geofencingRequest.geofences.get(0).toString()}", Toast.LENGTH_LONG).show()
-        //    }
-        //   addOnFailureListener {
-        //       Toast.makeText(requireContext(), "falsssssssssse", Toast.LENGTH_LONG).show()
-        //    }
-        //  }
 
-        geofencingClient.removeGeofences(geofencePendingIntent)?.run {
-            addOnCompleteListener {
-                if (ActivityCompat.checkSelfPermission(
-                        requireContext(),
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
-                }
-                geofencingClient.addGeofences(geofencingRequest, pendingIntent)?.run {
-                    addOnSuccessListener {
-                        Log.e(
-                            TAG,
-                            "Added geofence for reminder with id ${reminderDataItem.id} successfully."
-                        )
-                        Snackbar.make(requireView(), "Geofence Added", Snackbar.LENGTH_LONG).show()
-                        geofenceViewModel.geofenceActivated()
-                        _viewModel.validateAndSaveReminder(reminderDataItem)
-                    }
-                    addOnFailureListener {
-                        // _viewModel.showErrorMessage.postValue(getString(R.string.error_adding_geofence))
-                        Toast.makeText(
-                            requireContext(),
-                            "Geofence wasn't added :(",
-                            Toast.LENGTH_LONG
-                        )
-                            .show()
-                        it.message?.let { message ->
-                            Log.w(TAG, message)
-                        }
-                    }
 
+        geofencingClient.addGeofences(geofencingRequest, pendingIntent)?.run {
+            addOnSuccessListener {
+                Log.e(
+                    TAG,
+                    "Added geofence for reminder with id ${reminderDataItem.id} successfully."
+                )
+                Snackbar.make(requireView(), R.string.geofences_added, Snackbar.LENGTH_LONG).show()
+                geofenceViewModel.geofenceActivated()
+                _viewModel.validateAndSaveReminder(reminderDataItem)
+            }
+            addOnFailureListener {
+                // _viewModel.showErrorMessage.postValue(getString(R.string.error_adding_geofence))
+                Toast.makeText(
+                    requireContext(),
+                    "Geofence wasn't added :(",
+                    Toast.LENGTH_LONG
+                )
+                    .show()
+                it.message?.let { message ->
+                    Log.w(TAG, message)
                 }
             }
+
         }
 
     }

@@ -56,8 +56,9 @@ android {
             java.srcDirs += sharedTestSourceDir
         }
     }
-
-
+    packagingOptions {
+        exclude("META-INF/*")
+    }
 }
 
 dependencies {
