@@ -7,4 +7,4 @@ Or even you don't have to pass by the place to make a reminder, you can press on
 - Google maps to know your location.
 - Geofence services to add a geofence around the selected location.
 - Room Database to store reminders locally.
-- https://user-images.githubusercontent.com/69478720/204502128-26a98a81-7dac-4d1e-890a-570331f89012.mp4
+- ![4p9p4o](https://user-images.githubusercontent.com/69478720/204502128-26a98a81-7dac-4d1e-890a-570331f89012.mp4)
